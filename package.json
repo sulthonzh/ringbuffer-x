@@ -1,0 +1,24 @@
+{
+  "name": "ringbuffer-x",
+  "version": "1.0.0",
+  "description": "Zero-dep circular ring buffer with O(1) push/pop, bounded & overwriting modes, iterator support, and serialization.",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "ringbuffer-x": "cli.js"
+  },
+  "scripts": {
+    "test": "node --test test.js"
+  },
+  "keywords": [
+    "ring-buffer",
+    "circular-buffer",
+    "buffer",
+    "queue",
+    "fifo",
+    "bounded-queue",
+    "ringbuffer"
+  ],
+  "license": "MIT",
+  "author": "sulthonzh"
+}
