@@ -6,7 +6,7 @@ Zero-dep circular ring buffer with O(1) push/pop, bounded & overwriting modes, i
 
 Ring buffers are the backbone of streaming pipelines — audio frames, network packets, log tailing, producer/consumer queues. When you need a fixed-size FIFO that doesn't grow unbounded, this is the primitive.
 
-**~300 lines. Zero dependencies. 55+ tests.**
+**~300 lines. Zero dependencies. 75 tests.**
 
 ## Install
 
@@ -232,6 +232,25 @@ ringbuffer-x demo --cap 5
 # Load from JSON file
 ringbuffer-x from-json data.json --cap 100
 ```
+
+## How does it compare?
+
+| Feature | ringbuffer-x | circular-buffer | ringbufferjs | denque |
+|---------|:---:|:---:|:---:|:---:|
+| Zero deps | ✅ | ✅ | ✅ | ✅ |
+| Overwrite mode | ✅ | ❌ | ❌ | ❌ |
+| `popBack()` | ✅ | ❌ | ✅ | ✅ |
+| Random access (`get`/`set`) | ✅ | ❌ | ❌ | ✅ |
+| Iterator protocol | ✅ | ✅ | ❌ | ✅ |
+| `forEach` / `map` | ✅ | ❌ | ❌ | ❌ |
+| Search (`find`/`includes`) | ✅ | ❌ | ❌ | ❌ |
+| Serialization (`toJSON`/`fromJSON`) | ✅ | ❌ | ❌ | ❌ |
+| `drain(n)` batch pop | ✅ | ❌ | ❌ | ❌ |
+| Static `from(iterable)` | ✅ | ❌ | ❌ | ❌ |
+| Eviction counter | ✅ | ❌ | ❌ | ❌ |
+| CLI included | ✅ | ❌ | ❌ | ❌ |
+
+---
 
 ## License
 

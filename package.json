@@ -1,14 +1,33 @@
 {
   "name": "ringbuffer-x",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Zero-dep circular ring buffer with O(1) push/pop, bounded & overwriting modes, iterator support, and serialization.",
   "type": "module",
   "main": "index.js",
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "require": "./index.js",
+      "default": "./index.js"
+    }
+  },
   "bin": {
     "ringbuffer-x": "cli.js"
   },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "index.js",
+    "cli.js",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "test": "node --test test.js"
+    "test": "node --test test.js",
+    "test:core": "node --test --test-name-pattern='construction|push|pop|peek|get|set|drain|clear' test.js",
+    "prepublishOnly": "npm test"
   },
   "keywords": [
     "ring-buffer",

@@ -165,12 +165,13 @@ class RingBuffer {
 
   /**
    * Peek at item at logical index `i` (0 = front).
+   * Non-integer indices return undefined.
    *
    * @param {number} i
    * @returns {T | undefined}
    */
   get(i) {
-    if (i < 0 || i >= this._size) return undefined;
+    if (!Number.isInteger(i) || i < 0 || i >= this._size) return undefined;
     return this._buf[(this._head + i) % this._cap];
   }
 
@@ -179,10 +180,10 @@ class RingBuffer {
    *
    * @param {number} i
    * @param {T} value
-   * @throws {RangeError} If index is out of bounds.
+   * @throws {RangeError} If index is out of bounds or not an integer.
    */
   set(i, value) {
-    if (i < 0 || i >= this._size) {
+    if (!Number.isInteger(i) || i < 0 || i >= this._size) {
       throw new RangeError(`Index ${i} out of bounds (size=${this._size})`);
     }
     this._buf[(this._head + i) % this._cap] = value;
@@ -322,6 +323,7 @@ class RingBuffer {
 
   /**
    * Reconstruct a RingBuffer from serialized data.
+   * If `items` exceeds capacity, only the last `capacity` items are kept.
    *
    * @param {{ capacity: number, overflow?: string, items: any[] }} data
    * @returns {RingBuffer}
@@ -330,10 +332,13 @@ class RingBuffer {
     if (!data || typeof data.capacity !== 'number') {
       throw new TypeError('fromJSON requires { capacity, items }');
     }
-    const rb = new RingBuffer(data.capacity, { overflow: data.overflow || 'reject' });
-    for (const item of data.items || []) {
-      rb.push(item);
-    }
+    const overflow = data.overflow || 'reject';
+    const items = data.items || [];
+    // Use overwrite mode internally so items > capacity doesn't throw
+    const rb = new RingBuffer(data.capacity, { overflow: 'overwrite' });
+    for (const item of items) rb.push(item);
+    rb._overflow = overflow;
+    rb._evicted = 0;
     return rb;
   }
 

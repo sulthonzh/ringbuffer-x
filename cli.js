@@ -74,6 +74,13 @@ function parseArgs(argv) {
 
 function main() {
   const [cmd, ...rest] = process.argv.slice(2);
+
+  // Handle version flags
+  if (cmd === '--version' || cmd === '-V' || cmd === 'version') {
+    console.log('1.1.0');
+    process.exit(0);
+  }
+
   if (!cmd) {
     console.log(`ringbuffer-x CLI
 
