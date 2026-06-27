@@ -26,8 +26,10 @@
   ],
   "scripts": {
     "test": "node --test test.js",
+    "test:coverage": "c8 node --test test.js",
     "test:core": "node --test --test-name-pattern='construction|push|pop|peek|get|set|drain|clear' test.js",
-    "prepublishOnly": "npm test"
+    "lint": "eslint index.js cli.js test.js",
+    "prepublishOnly": "npm test && npm run lint"
   },
   "keywords": [
     "ring-buffer",
@@ -39,5 +41,10 @@
     "ringbuffer"
   ],
   "license": "MIT",
-  "author": "sulthonzh"
+  "author": "sulthonzh",
+  "devDependencies": {
+    "c8": "^11.0.0",
+    "eslint": "^10.6.0",
+    "globals": "^17.7.0"
+  }
 }
