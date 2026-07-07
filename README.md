@@ -6,7 +6,7 @@ Zero-dep circular ring buffer with O(1) push/pop, bounded & overwriting modes, i
 
 Ring buffers are the backbone of streaming pipelines — audio frames, network packets, log tailing, producer/consumer queues. When you need a fixed-size FIFO that doesn't grow unbounded, this is the primitive.
 
-**~300 lines. Zero dependencies. 75 tests.**
+**~300 lines. Zero dependencies. 106 tests.**
 
 ## Install
 

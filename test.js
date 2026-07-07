@@ -579,3 +579,219 @@ describe('RingBuffer — stress / edge cases', () => {
     assert.deepEqual(rb.toArray(), ['b']);
   });
 });
+
+describe('RingBuffer — additional edge cases', () => {
+  it('pushAll in reject mode stops at first failure', () => {
+    const rb = new RingBuffer(3);
+    rb.push(1); rb.push(2);
+    // third push fails, first two should remain
+    assert.throws(() => rb.pushAll([3, 4, 5]), /full/);
+    // 3 was pushed before 4 failed
+    assert.equal(rb.size, 3);
+    assert.deepEqual(rb.toArray(), [1, 2, 3]);
+  });
+
+  it('from() with overflow reject and items > capacity keeps last N', () => {
+    const rb = RingBuffer.from([1, 2, 3, 4, 5], 3, { overflow: 'reject' });
+    assert.deepEqual(rb.toArray(), [3, 4, 5]);
+    assert.equal(rb.overflow, 'reject');
+    // should not be able to push more (full)
+    assert.ok(rb.isFull);
+    assert.throws(() => rb.push(6), /full/);
+  });
+
+  it('set() with non-number type throws RangeError', () => {
+    const rb = new RingBuffer(3);
+    rb.push(1); rb.push(2);
+    assert.throws(() => rb.set('x', 'val'), RangeError);
+    assert.throws(() => rb.set(null, 'val'), RangeError);
+    assert.throws(() => rb.set(undefined, 'val'), RangeError);
+    assert.throws(() => rb.set(true, 'val'), RangeError);
+  });
+
+  it('set() with Symbol throws TypeError (cannot stringify)', () => {
+    const rb = new RingBuffer(3);
+    rb.push(1);
+    assert.throws(() => rb.set(Symbol(), 'val'));  // TypeError from template literal
+  });
+
+  it('get() with non-number type returns undefined', () => {
+    const rb = new RingBuffer(3);
+    rb.push(1); rb.push(2);
+    assert.equal(rb.get('x'), undefined);
+    assert.equal(rb.get(null), undefined);
+    assert.equal(rb.get(undefined), undefined);
+    assert.equal(rb.get(true), undefined);
+  });
+
+  it('drain() with no argument drains all', () => {
+    const rb = new RingBuffer(5);
+    rb.push(1); rb.push(2); rb.push(3);
+    const drained = rb.drain();
+    assert.deepEqual(drained, [1, 2, 3]);
+    assert.equal(rb.size, 0);
+  });
+
+  it('find returns undefined on empty buffer', () => {
+    const rb = new RingBuffer(3);
+    assert.equal(rb.find(() => true), undefined);
+  });
+
+  it('findIndex returns -1 on empty buffer', () => {
+    const rb = new RingBuffer(3);
+    assert.equal(rb.findIndex(() => true), -1);
+  });
+
+  it('includes returns false on empty buffer', () => {
+    const rb = new RingBuffer(3);
+    assert.ok(!rb.includes('anything'));
+  });
+
+  it('iterator on empty buffer yields nothing', () => {
+    const rb = new RingBuffer(3);
+    assert.deepEqual([...rb], []);
+  });
+
+  it('forEach on empty buffer does nothing', () => {
+    const rb = new RingBuffer(3);
+    let count = 0;
+    rb.forEach(() => count++);
+    assert.equal(count, 0);
+  });
+
+  it('map on empty buffer returns empty array', () => {
+    const rb = new RingBuffer(3);
+    assert.deepEqual(rb.map(x => x), []);
+  });
+
+  it('toArray on empty buffer returns empty array', () => {
+    const rb = new RingBuffer(3);
+    assert.deepEqual(rb.toArray(), []);
+  });
+
+  it('toJSON on empty buffer returns correct structure', () => {
+    const rb = new RingBuffer(3, { overflow: 'overwrite' });
+    const json = rb.toJSON();
+    assert.equal(json.capacity, 3);
+    assert.equal(json.overflow, 'overwrite');
+    assert.deepEqual(json.items, []);
+  });
+
+  it('popBack on single-element buffer', () => {
+    const rb = new RingBuffer(3);
+    rb.push(42);
+    assert.equal(rb.popBack(), 42);
+    assert.equal(rb.size, 0);
+  });
+
+  it('popBack after wrap-around', () => {
+    const rb = new RingBuffer(3);
+    rb.push(1); rb.push(2); rb.push(3);
+    rb.pop(); rb.push(4); // [2, 3, 4] with wrap
+    assert.equal(rb.popBack(), 4);
+    assert.deepEqual(rb.toArray(), [2, 3]);
+  });
+
+  it('peekBack on single-element buffer', () => {
+    const rb = new RingBuffer(3);
+    rb.push('only');
+    assert.equal(rb.peekBack(), 'only');
+    assert.equal(rb.peek(), 'only');
+  });
+
+  it('pushAll with reject mode partial push verification', () => {
+    const rb = new RingBuffer(4, { overflow: 'reject' });
+    rb.push('a');
+    rb.push('b');
+    // buffer has 2 free slots; push 4 items -> should fail on 3rd
+    assert.throws(() => rb.pushAll(['c', 'd', 'e', 'f']), /full/);
+    // 'c' and 'd' should have been pushed before 'e' failed
+    assert.deepEqual(rb.toArray(), ['a', 'b', 'c', 'd']);
+  });
+
+  it('constructor with NaN capacity throws RangeError', () => {
+    assert.throws(() => new RingBuffer(NaN), RangeError);
+  });
+
+  it('constructor with Infinity capacity throws RangeError', () => {
+    assert.throws(() => new RingBuffer(Infinity), RangeError);
+  });
+
+  it('constructor with negative Infinity throws RangeError', () => {
+    assert.throws(() => new RingBuffer(-Infinity), RangeError);
+  });
+
+  it('clear resets evictedCount', () => {
+    const rb = new RingBuffer(3, { overflow: 'overwrite' });
+    rb.push(1); rb.push(2); rb.push(3); rb.push(4);
+    assert.equal(rb.evictedCount, 1);
+    rb.clear();
+    assert.equal(rb.evictedCount, 0);
+  });
+
+  it('fromJSON with items less than capacity', () => {
+    const rb = RingBuffer.fromJSON({ capacity: 10, items: [1, 2, 3] });
+    assert.equal(rb.size, 3);
+    assert.equal(rb.capacity, 10);
+    assert.equal(rb.free, 7);
+    assert.ok(!rb.isFull);
+  });
+
+  it('from() with empty array', () => {
+    const rb = RingBuffer.from([], 5);
+    assert.equal(rb.size, 0);
+    assert.ok(rb.isEmpty);
+  });
+
+  it('from() preserves overflow option', () => {
+    const rb = RingBuffer.from([1, 2], 5, { overflow: 'overwrite' });
+    assert.equal(rb.overflow, 'overwrite');
+  });
+
+  it('toString on empty buffer', () => {
+    const rb = new RingBuffer(5);
+    const s = rb.toString();
+    assert.ok(s.includes('0/5'));
+  });
+
+  it('overwrite push then pop then push (size consistency)', () => {
+    const rb = new RingBuffer(3, { overflow: 'overwrite' });
+    rb.push(1); rb.push(2); rb.push(3);
+    rb.pop(); // remove 1, size=2
+    rb.push(4); // size=3, no eviction
+    assert.deepEqual(rb.toArray(), [2, 3, 4]);
+    assert.equal(rb.evictedCount, 0);
+  });
+
+  it('find with index in predicate callback', () => {
+    const rb = new RingBuffer(5);
+    rb.push(10); rb.push(20); rb.push(30);
+    const found = rb.find((item, i) => i === 1);
+    assert.equal(found, 20);
+  });
+
+  it('set at last valid index', () => {
+    const rb = new RingBuffer(3);
+    rb.push('a'); rb.push('b'); rb.push('c');
+    rb.set(2, 'C');
+    assert.equal(rb.get(2), 'C');
+  });
+
+  it('set at index 0 on full buffer after wrap', () => {
+    const rb = new RingBuffer(3);
+    rb.push(1); rb.push(2); rb.push(3);
+    rb.pop(); rb.push(4); // [2, 3, 4] with wrap
+    rb.set(0, 'two');
+    assert.equal(rb.get(0), 'two');
+    assert.deepEqual(rb.toArray(), ['two', 3, 4]);
+  });
+
+  it('large capacity stress test', () => {
+    const rb = new RingBuffer(10000, { overflow: 'overwrite' });
+    for (let i = 0; i < 15000; i++) rb.push(i);
+    assert.equal(rb.size, 10000);
+    assert.equal(rb.toArray()[0], 5000);
+    assert.equal(rb.toArray()[9999], 14999);
+    assert.equal(rb.evictedCount, 5000);
+  });
+});

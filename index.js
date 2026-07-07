@@ -221,13 +221,14 @@ class RingBuffer {
   }
 
   /**
-   * Remove all items.
+   * Remove all items and reset eviction counter.
    */
   clear() {
     this._buf.fill(undefined);
     this._head = 0;
     this._tail = 0;
     this._size = 0;
+    this._evicted = 0;
   }
 
   // ── Search helpers ───────────────────────────────────────
@@ -247,10 +248,10 @@ class RingBuffer {
   }
 
   /**
-   * Return indices of items matching a predicate.
+   * Return the index of the first item matching a predicate, or -1 if none.
    *
    * @param {(item: T, index: number) => boolean} fn
-   * @returns {number[]}
+   * @returns {number}
    */
   findIndex(fn) {
     for (let i = 0; i < this._size; i++) {
@@ -351,9 +352,12 @@ class RingBuffer {
    * @param {Object} [opts]
    * @returns {RingBuffer}
    */
-  static from(items, capacity, opts) {
-    const rb = new RingBuffer(capacity, { overflow: 'overwrite', ...opts });
+  static from(items, capacity, opts = {}) {
+    // Always use overwrite internally so items > capacity doesn't throw
+    const rb = new RingBuffer(capacity, { overflow: 'overwrite' });
     for (const item of items) rb.push(item);
+    // Apply the user's preferred overflow strategy after filling
+    rb._overflow = opts.overflow || 'reject';
     // Reset eviction counter so it only counts future evictions
     rb._evicted = 0;
     return rb;

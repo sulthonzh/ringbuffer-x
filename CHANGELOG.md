@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.1.1 — 2026-07-07
+
+### Fixed
+
+- **`clear()` didn't reset `evictedCount`** — stale eviction count persisted after clear. Now resets to 0.
+- **`from()` ignored `overflow` option when items exceeded capacity** — spread override caused `reject` mode to throw during pre-fill. Now uses overwrite internally and applies user's overflow strategy after.
+- **JSDoc `findIndex()` return type** — documented as `number[]` but returns `number`. Corrected.
+
+### Added
+
+- 31 new tests (75 → 106): pushAll partial push in reject mode, from() with reject overflow, set()/get() with non-number types, empty buffer edge cases, popBack/peekBack on single element, constructor with NaN/Infinity, clear() eviction reset, large capacity stress test
+- STATUS.md with full exceptional checklist audit
+
 ## v1.1.0 — 2026-06-19
 
 ### Fixed
